@@ -1,0 +1,146 @@
+:root {
+  --paper: #eef2f5;
+  --panel: #ffffff;
+  --ink: #18212c;
+  --muted: #586473;
+  --rule: #d3dbe3;
+  --obs: #18212c;
+  --ml: #3157d5;
+  --cams: #8a96a6;
+  --haze: #f28c28;
+  --display: "Bricolage Grotesque", system-ui, sans-serif;
+  --body: "Instrument Sans", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121820; --panel: #19212b; --ink: #e8edf2; --muted: #9aa6b4; --rule: #2b3643;
+    --obs: #e8edf2; --ml: #7d9bff; --cams: #6b7686; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121820; --panel: #19212b; --ink: #e8edf2; --muted: #9aa6b4; --rule: #2b3643;
+  --obs: #e8edf2; --ml: #7d9bff; --cams: #6b7686; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 16px/1.55 var(--body); -webkit-font-smoothing: antialiased;
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+
+/* The one bold move: a haze that takes the colour and density of the selected city's air */
+.haze {
+  position: fixed; inset: 0 0 auto 0; height: 70vh; pointer-events: none; z-index: 0;
+  background: radial-gradient(120% 90% at 70% -10%, var(--haze) 0%, transparent 65%);
+  opacity: var(--haze-opacity, .25); transition: opacity 1.2s ease, background 1.2s ease;
+}
+
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ml); outline-offset: 2px; border-radius: 4px; }
+
+.top, main, footer { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+.top { display: flex; align-items: baseline; gap: 24px; padding-top: 22px; padding-bottom: 10px; flex-wrap: wrap; }
+.brand { font: 800 22px/1 var(--display); text-decoration: none; letter-spacing: -.01em; }
+.updated { margin: 0; color: var(--muted); font-size: 14px; flex: 1; }
+.top nav { display: flex; gap: 18px; font-size: 15px; }
+.top nav a { text-decoration: none; color: var(--muted); }
+.top nav a:hover { color: var(--ink); }
+
+h2 { font: 600 28px/1.15 var(--display); margin: 0 0 16px; letter-spacing: -.01em; }
+h3 { font: 600 16px/1.3 var(--body); margin: 0 0 10px; }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 280px 1fr; gap: 40px; padding: 28px 0 56px; }
+.ranking h2 { font: 600 15px/1.3 var(--body); color: var(--muted); margin-bottom: 10px; }
+.ranking ol { list-style: none; margin: 0; padding: 0; }
+.ranking button {
+  width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px;
+  padding: 9px 10px 9px 14px; margin: 0; border: 0; background: transparent; color: inherit;
+  font: inherit; text-align: left; cursor: pointer; border-radius: 6px; position: relative;
+}
+.ranking button::before {
+  content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--c);
+}
+.ranking button:hover { background: color-mix(in srgb, var(--panel) 70%, transparent); }
+.ranking button[aria-pressed="true"] { background: var(--panel); box-shadow: 0 0 0 1px var(--rule); }
+.ranking .v { font: 600 17px/1 var(--display); font-variant-numeric: tabular-nums; }
+.ranking .bar { grid-column: 1 / -1; height: 3px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.ranking .bar i { display: block; height: 100%; background: var(--c); }
+
+.detail { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 28px 36px; align-items: start; }
+.city-name { font: 600 20px/1.2 var(--display); margin: 0; }
+.big-aqi {
+  font: 800 clamp(96px, 13vw, 168px)/.86 var(--display); margin: 10px 0 6px; letter-spacing: -.05em;
+  font-variant-numeric: tabular-nums; color: var(--catc, var(--ink));
+}
+.cat { font: 600 22px/1.2 var(--display); margin: 0 0 14px; }
+.outlook { color: var(--muted); margin: 0; max-width: 34ch; }
+.outlook strong { color: var(--ink); font-weight: 600; }
+
+.chart-wrap { background: var(--panel); border-radius: 14px; padding: 18px 18px 10px; box-shadow: 0 0 0 1px var(--rule); min-width: 0; }
+.canvas-box { position: relative; height: 270px; margin-top: 8px; }
+.chart-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.sw { display: inline-block; width: 16px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+.sw-obs { background: var(--obs); } .sw-ml { background: var(--ml); }
+.sw-cams { background: repeating-linear-gradient(90deg, var(--cams) 0 4px, transparent 4px 7px); }
+
+.pollutants { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 12px; margin: 0; border-top: 1px solid var(--rule); }
+.pollutants div { padding: 14px 4px 0; }
+.pollutants dt { font-size: 13px; color: var(--muted); }
+.pollutants dd { margin: 2px 0 0; font: 600 22px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.pollutants dd small { font: 400 12px var(--body); color: var(--muted); margin-left: 3px; }
+
+/* Map */
+.map-section { display: grid; grid-template-columns: 300px 1fr; gap: 40px; padding: 48px 0; border-top: 1px solid var(--rule); }
+.map-copy p { color: var(--muted); margin: 0 0 18px; }
+#map { height: 460px; border-radius: 14px; box-shadow: 0 0 0 1px var(--rule); background: var(--panel); }
+.scale { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.scale li { display: flex; align-items: center; gap: 10px; }
+.scale i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); }
+.scale span { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+.leaflet-container { font: inherit; }
+
+/* Model */
+.model { padding: 48px 0; border-top: 1px solid var(--rule); }
+.model-grid { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 36px; }
+.model-grid > div { min-width: 0; }
+.metric-lead { font: 800 64px/1 var(--display); margin: 0; color: var(--ml); letter-spacing: -.03em; }
+.metric-sub { color: var(--muted); margin: 6px 0 20px; max-width: 40ch; }
+.leader { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 15px; }
+.leader th { text-align: left; font-weight: 500; color: var(--muted); font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.leader td { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.leader tr.win td { font-weight: 600; }
+.leader tr.win td:first-child::after { content: " (in production)"; font-weight: 400; color: var(--ml); font-size: 13px; }
+.live { color: var(--muted); font-size: 14px; margin-top: 16px; }
+
+/* How it works */
+.how { padding: 48px 0 64px; border-top: 1px solid var(--rule); }
+.pipeline { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+.pipeline li { counter-increment: s; padding: 18px 22px 18px 0; border-top: 2px solid var(--ink); margin-right: 22px; }
+.pipeline li::before { content: counter(s); font: 800 30px/1 var(--display); color: var(--ml); display: block; margin-bottom: 8px; }
+.pipeline strong { display: block; font: 600 18px/1.3 var(--display); margin-bottom: 4px; }
+.pipeline span { color: var(--muted); font-size: 15px; }
+.stack { margin-top: 28px; color: var(--muted); font-size: 14px; }
+
+footer { padding-bottom: 40px; color: var(--muted); font-size: 13px; }
+
+@media (max-width: 1000px) {
+  .hero { grid-template-columns: 1fr; }
+  .ranking ol { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 12px; }
+  .detail { grid-template-columns: 1fr; }
+  .map-section, .model-grid { grid-template-columns: 1fr; }
+  .pipeline { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .pollutants { grid-template-columns: repeat(2, 1fr); }
+  .canvas-box { height: 230px; }
+  .top, main, footer { padding: 0 16px; }
+  .ranking ol { grid-template-columns: 1fr; }
+  .pipeline { grid-template-columns: 1fr; }
+  #map { height: 360px; }
+  .top nav { width: 100%; }
+}

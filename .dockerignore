@@ -1,0 +1,8 @@
+.git
+.github
+data
+docs
+tests
+infra
+mlruns
+**/__pycache__

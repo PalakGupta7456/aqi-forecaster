@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AQI Forecaster — live air quality for Indian cities</title>
+  <meta name="description" content="Live air quality and a machine-learning 24-hour PM2.5 forecast for ten Indian cities, refreshed every hour.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="haze" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand" href="#">AQI Forecaster</a>
+    <p class="updated" id="updated">Loading live data…</p>
+    <nav>
+      <a href="#model">Model</a>
+      <a href="#how">How it works</a>
+      <a id="repo-link" href="https://github.com/">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-live="polite">
+      <aside class="ranking" aria-label="Cities ranked by current AQI">
+        <h2>Right now, worst first</h2>
+        <ol id="ranking"></ol>
+      </aside>
+
+      <div class="detail">
+        <div class="reading">
+          <p class="city-name" id="city-name">—</p>
+          <p class="big-aqi" id="big-aqi">—</p>
+          <p class="cat" id="cat">—</p>
+          <p class="outlook" id="outlook"></p>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-head">
+            <h3>PM2.5, past 3 days and next 24 hours</h3>
+            <div class="legend">
+              <span><i class="sw sw-obs"></i>Observed</span>
+              <span><i class="sw sw-ml"></i>Our model</span>
+              <span><i class="sw sw-cams"></i>CAMS physics model</span>
+            </div>
+          </div>
+          <div class="canvas-box"><canvas id="series" aria-label="PM2.5 history and forecast chart" role="img"></canvas></div>
+        </div>
+        <dl class="pollutants" id="pollutants"></dl>
+      </div>
+    </section>
+
+    <section class="map-section">
+      <div class="map-copy">
+        <h2>Where the air is heaviest</h2>
+        <p>Circle size and colour follow the current AQI. Select a city to see its forecast.</p>
+        <ul class="scale" id="scale"></ul>
+      </div>
+      <div id="map" role="region" aria-label="Map of city AQI"></div>
+    </section>
+
+    <section class="model" id="model">
+      <h2>How good is the forecast?</h2>
+      <div class="model-grid">
+        <div class="metric-block">
+          <p class="metric-lead" id="skill">—</p>
+          <p class="metric-sub">lower error than assuming the air stays as it is now (persistence baseline), on the last 14 days of held-out data.</p>
+          <table class="leader" id="leader">
+            <thead><tr><th>Model</th><th>MAE</th><th>RMSE</th><th>R²</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <p class="live" id="live"></p>
+        </div>
+        <div>
+          <h3>Error grows with lead time</h3>
+          <canvas id="horizon" height="220" role="img" aria-label="Mean absolute error by forecast horizon"></canvas>
+        </div>
+        <div>
+          <h3>What the model looks at</h3>
+          <canvas id="importance" height="300" role="img" aria-label="Top feature importances"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="how" id="how">
+      <h2>How it works</h2>
+      <ol class="pipeline">
+        <li><strong>Ingest</strong><span>Every hour a GitHub Actions job pulls 92 days of hourly pollution (CAMS) and weather from the Open-Meteo APIs.</span></li>
+        <li><strong>Features</strong><span>48 hours of PM2.5 lags, rolling statistics, other pollutants, and the weather forecast for the target hour.</span></li>
+        <li><strong>Train</strong><span>Once a day XGBoost and LightGBM compete against a persistence baseline. The winner is promoted automatically.</span></li>
+        <li><strong>Forecast</strong><span>One direct model predicts 1 to 24 hours ahead for every city and logs each prediction.</span></li>
+        <li><strong>Monitor</strong><span>Logged forecasts are scored against what actually happened, giving live accuracy.</span></li>
+        <li><strong>Serve</strong><span>This page is rebuilt on GitHub Pages. The same model ships as a FastAPI Docker image on GHCR.</span></li>
+      </ol>
+      <p class="stack">Built with Python, pandas, XGBoost, LightGBM, scikit-learn, FastAPI, Docker, GitHub Actions, GitHub Pages, Jenkins and Terraform for AWS Lambda.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Data: Open-Meteo Air Quality API (Copernicus CAMS) and Open-Meteo Weather. AQI uses CPCB National AQI breakpoints applied to hourly values. Not for health decisions.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

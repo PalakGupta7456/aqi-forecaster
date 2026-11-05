@@ -1,0 +1,80 @@
+name: Live forecast pipeline
+
+# Serverless MLOps loop: every hour GitHub's runners ingest live data, retrain
+# daily, forecast, score past forecasts, and redeploy the dashboard.
+on:
+  schedule:
+    - cron: "17 * * * *"   # every hour at :17
+  workflow_dispatch:
+    inputs:
+      retrain:
+        description: "Force model retraining"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # push model + forecast log to the live-data branch
+  pages: write
+  id-token: write
+
+concurrency:
+  group: live-pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+
+      - name: Restore state (model, metrics, forecast log) from live-data branch
+        run: |
+          mkdir -p models docs/data
+          if git fetch --depth 1 origin live-data; then
+            git archive FETCH_HEAD | tar -x -C .
+            echo "HAVE_STATE=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: Ingest live data
+        run: python -m aqi.ingest
+
+      - name: Retrain (daily at 03:17 UTC, on first run, or when forced)
+        run: |
+          HOUR=$(date -u +%H)
+          if [ ! -f models/model.joblib ] || [ "${{ inputs.retrain }}" = "true" ] || [ "$HOUR" = "03" ]; then
+            python -m aqi.train
+          else
+            echo "Model is fresh, skipping retrain"
+          fi
+
+      - name: Forecast and score
+        run: python -m aqi.predict
+
+      - name: Save state to live-data branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          STATE=$(mktemp -d)
+          mkdir -p "$STATE/models" "$STATE/docs/data"
+          cp models/model.joblib models/metrics.json "$STATE/models/"
+          cp docs/data/forecast_log.csv docs/data/forecast.json "$STATE/docs/data/"
+          cd "$STATE"
+          git init -q -b live-data
+          git add -A
+          git commit -q -m "Live state $(date -u +%FT%TZ)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" live-data
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deploy
+        uses: actions/deploy-pages@v4

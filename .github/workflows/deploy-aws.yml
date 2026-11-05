@@ -1,0 +1,57 @@
+name: Deploy API to AWS Lambda
+
+# Optional. Runs only after you add AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and TF_STATE_BUCKET
+# as repository secrets (Settings > Secrets and variables > Actions).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["api/**", "src/**", "Dockerfile", "infra/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-south-1
+      HAS_AWS: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+    steps:
+      - name: Skip when AWS is not configured
+        if: env.HAS_AWS != 'true'
+        run: echo "::notice::AWS secrets not set, skipping AWS deployment."
+      - uses: actions/checkout@v4
+        if: env.HAS_AWS == 'true'
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: env.HAS_AWS == 'true'
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        if: env.HAS_AWS == 'true'
+      - name: Create ECR repository
+        if: env.HAS_AWS == 'true'
+        working-directory: infra/terraform
+        run: |
+          terraform init -input=false -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
+          terraform apply -auto-approve -input=false -target=aws_ecr_repository.api \
+            -var image_tag=${{ github.sha }} -var model_url=${{ env.MODEL_URL }}
+        env:
+          MODEL_URL: https://raw.githubusercontent.com/${{ github.repository }}/live-data/models/model.joblib
+      - name: Build and push image to ECR
+        if: env.HAS_AWS == 'true'
+        run: |
+          REPO=$(aws ecr describe-repositories --repository-names aqi-forecaster --query 'repositories[0].repositoryUri' --output text)
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${REPO%%/*}"
+          docker build --provenance=false -t "$REPO:${{ github.sha }}" .
+          docker push "$REPO:${{ github.sha }}"
+      - name: Deploy Lambda
+        if: env.HAS_AWS == 'true'
+        working-directory: infra/terraform
+        run: |
+          terraform init -input=false -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
+          terraform apply -auto-approve -input=false -var image_tag=${{ github.sha }} \
+            -var model_url=https://raw.githubusercontent.com/${{ github.repository }}/live-data/models/model.joblib
+          echo "API URL: $(terraform output -raw api_url)" >> "$GITHUB_STEP_SUMMARY"
