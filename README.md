@@ -9,19 +9,19 @@
 
 An end-to-end, fully serverless machine-learning system. Every hour it pulls live pollution and weather data for 10 Indian cities, forecasts PM2.5 and AQI for the next 24 hours, checks how accurate its earlier forecasts were, and republishes an interactive dashboard. No server runs between updates and the whole system costs nothing to operate.
 
-![Dashboard](docs/screenshot.png)
+![Live dashboard](docs/screenshot.jpg)
 
 ## Results
 
-Measured on the last 14 days of data, held out from training:
+Measured on real data, on the last 14 days held out from training (all 24 forecast horizons, 10 cities):
 
 | Model | MAE (µg/m³) | RMSE | R² |
 |---|---|---|---|
-| Persistence baseline ("air stays as it is now") | 28.2 | 38.5 | 0.00 |
-| XGBoost | 12.0 | 15.3 | 0.84 |
-| **LightGBM (in production)** | **12.0** | **15.3** | **0.84** |
+| Persistence baseline ("air stays as it is now") | 15.9 | 23.7 | 0.53 |
+| XGBoost | 12.8 | 18.5 | 0.71 |
+| **LightGBM (in production)** | **12.7** | **18.7** | **0.71** |
 
-The numbers above come from the offline synthetic run. The live dashboard shows the current figures from real data, including **live accuracy**: every forecast is logged and scored once its target hour has passed.
+LightGBM cuts forecast error by **20%** against persistence, and the gap widens with lead time (see the error-by-horizon chart on the dashboard). The model is retrained daily, so these numbers update on the live site. The dashboard also shows **live accuracy**: every forecast is logged and scored once its target hour has passed.
 
 ## Architecture
 
