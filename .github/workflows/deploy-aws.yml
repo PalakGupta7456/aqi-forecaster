@@ -21,7 +21,7 @@ jobs:
       - name: Skip when AWS is not configured
         if: env.HAS_AWS != 'true'
         run: echo "::notice::AWS secrets not set, skipping AWS deployment."
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: env.HAS_AWS == 'true'
       - uses: aws-actions/configure-aws-credentials@v4
         if: env.HAS_AWS == 'true'
