@@ -118,8 +118,8 @@
 
   function renderMap() {
     map = L.map("map", { scrollWheelZoom: false, attributionControl: true }).setView([22.5, 79], 4.6);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap, &copy; CARTO", subdomains: "abcd", maxZoom: 10,
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri", maxZoom: 16,
     }).addTo(map);
     data.cities.forEach((c) => {
       const m = L.circleMarker([c.lat, c.lon], {
